@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CodeMind — code review that remembers</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #8b93a7; --accent: #6ea8fe; --good: #3fb950;
+    --bad: #f85149; --warn: #d29922; --mem: #b392f0;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+         background: var(--bg); color: var(--text); }
+  header { display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+           border-bottom: 1px solid var(--border); }
+  header h1 { font-size: 18px; margin: 0; }
+  header .tag { color: var(--muted); }
+  header .bank { margin-left: auto; color: var(--mem); font-family: ui-monospace, monospace; font-size: 12px; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; padding: 16px 20px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  input, select, textarea { background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+         border-radius: 6px; padding: 7px 9px; font: inherit; }
+  input { flex: 1; min-width: 110px; }
+  textarea { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  #code { min-height: 340px; resize: vertical; }
+  button { background: var(--accent); color: #0b1020; border: 0; border-radius: 6px; padding: 8px 14px;
+           font-weight: 600; cursor: pointer; font: inherit; font-weight: 600; }
+  button.secondary { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
+  button.good { background: var(--good); color: #04150a; }
+  button.bad { background: var(--bad); color: #1a0405; }
+  button:disabled { opacity: .5; cursor: wait; }
+  label.toggle { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+  .stack > * + * { margin-top: 16px; }
+  .summary { color: var(--muted); margin-bottom: 10px; }
+  .card { border: 1px solid var(--border); border-left: 4px solid var(--muted); border-radius: 8px;
+          padding: 10px 12px; margin-bottom: 10px; background: var(--panel2); }
+  .card.critical { border-left-color: var(--bad); } .card.major { border-left-color: var(--warn); }
+  .card.minor { border-left-color: var(--accent); } .card.nit { border-left-color: var(--muted); }
+  .card h3 { margin: 0 0 4px; font-size: 14px; }
+  .meta { font-size: 12px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .pill { border: 1px solid var(--border); border-radius: 99px; padding: 0 8px; }
+  .pill.recurring { color: var(--warn); border-color: var(--warn); }
+  .membasis { color: var(--mem); font-size: 12px; margin: 6px 0; }
+  .membasis::before { content: "🧠 "; }
+  pre.fix { background: #0b0d12; border-radius: 6px; padding: 8px; overflow-x: auto; margin: 6px 0;
+            font-size: 12px; white-space: pre-wrap; }
+  .actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .actions input { font-size: 12px; }
+  .verdict { font-weight: 600; font-size: 12px; }
+  .verdict.accepted { color: var(--good); } .verdict.rejected { color: var(--bad); }
+  .skipped { color: var(--mem); font-size: 13px; }
+  .memlist { font-size: 12px; color: var(--muted); max-height: 260px; overflow-y: auto; }
+  .memlist div { padding: 5px 0; border-bottom: 1px dashed var(--border); }
+  .memlist b { color: var(--mem); font-weight: 500; }
+  .empty { color: var(--muted); font-style: italic; }
+  #insights { white-space: pre-wrap; font-size: 13px; }
+  .err { color: var(--bad); }
+  .timing { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🧠 CodeMind</h1>
+  <span class="tag">code review that remembers your team</span>
+  <span class="bank" id="bank"></span>
+</header>
+
+<main>
+  <section class="stack">
+    <div class="panel">
+      <h2>Submit code</h2>
+      <div class="row">
+        <input id="team" value="demo-team" title="Team (one Hindsight memory bank per team)" placeholder="team" />
+        <input id="author" value="ravi" placeholder="author" />
+        <input id="filename" value="payments/service.py" placeholder="filename" />
+        <select id="language">
+          <option>python</option><option>javascript</option><option>typescript</option>
+          <option>java</option><option>go</option><option>sql</option>
+        </select>
+      </div>
+      <div class="row">
+        <select id="sample" class="secondary" title="Load a demo snippet">
+          <option value="">Load demo snippet…</option>
+        </select>
+      </div>
+      <textarea id="code" spellcheck="false" placeholder="Paste code or a diff here"></textarea>
+      <div class="row" style="margin-top:8px; align-items:center">
+        <button id="reviewBtn">Review</button>
+        <label class="toggle"><input type="checkbox" id="useMemory" checked style="flex:0;min-width:0" /> use team memory (Hindsight)</label>
+        <span class="timing" id="timing"></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Teach a rule or decision</h2>
+      <div class="row">
+        <select id="ruleKind"><option value="rule">coding standard</option><option value="decision">architecture decision</option></select>
+        <input id="rule" placeholder="e.g. All money values are integers in paise, never floats" />
+        <button class="secondary" id="ruleBtn">Remember</button>
+      </div>
+      <div class="timing" id="ruleStatus"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Team insights (Hindsight reflect)</h2>
+      <div class="row"><button class="secondary" id="insightBtn">What has CodeMind learned about this team?</button></div>
+      <div id="insights" class="empty">Nothing yet.</div>
+    </div>
+  </section>
+
+  <section class="stack">
+    <div class="panel">
+      <h2>Review</h2>
+      <div id="results" class="empty">Submit code to get a review.</div>
+    </div>
+    <div class="panel">
+      <h2>Memories recalled for this review</h2>
+      <div id="recalled" class="memlist empty">—</div>
+    </div>
+    <div class="panel">
+      <h2>Memory bank <button class="secondary" id="refreshMem" style="float:right;padding:2px 8px;font-size:12px">refresh</button></h2>
+      <div id="bankMem" class="memlist empty">—</div>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let currentReview = null;
+
+const SAMPLES = {
+  "payments (float money, bare except)": {filename: "payments/service.py", language: "python", code:
+`import requests
+
+def charge(user, amount):
+    total = amount * 1.18  # add GST
+    try:
+        r = requests.post("https://pay.example.com/charge",
+                          json={"user": user.id, "amount": total})
+        return r.json()
+    except:
+        print("payment failed")
+        return None
+`},
+  "refunds (same mistakes again)": {filename: "payments/refunds.py", language: "python", code:
+`import requests
+
+def refund(order):
+    amount = order.total * 0.9
+    try:
+        resp = requests.post("https://pay.example.com/refund",
+                             json={"order": order.id, "amount": amount})
+        return resp.json()
+    except:
+        print("refund failed")
+`},
+  "users api (sql + print)": {filename: "api/users.py", language: "python", code:
+`def get_user(db, user_id):
+    print("fetching", user_id)
+    q = f"SELECT * FROM users WHERE id = {user_id}"
+    row = db.execute(q).fetchone()
+    return {"id": row[0], "name": row[1], "email": row[2]}
+`},
+};
+for (const k of Object.keys(SAMPLES)) $("sample").insertAdjacentHTML("beforeend", `<option>${esc(k)}</option>`);
+$("sample").onchange = (e) => {
+  const s = SAMPLES[e.target.value]; if (!s) return;
+  $("code").value = s.code; $("filename").value = s.filename; $("language").value = s.language;
+};
+
+async function api(path, body) {
+  const res = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"},
+                                         body: JSON.stringify(body)} : {});
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || res.statusText);
+  return data;
+}
+
+function tagLabel(m) {
+  const t = (m.tags || []).filter(t => t.startsWith("kind:") || t.startsWith("verdict:")).join(" · ");
+  return t || m.type || "memory";
+}
+
+$("reviewBtn").onclick = async () => {
+  const btn = $("reviewBtn"); btn.disabled = true; btn.textContent = "Reviewing…";
+  $("results").className = ""; $("results").innerHTML = '<span class="empty">Recalling team memory and reviewing…</span>';
+  try {
+    const r = await api("/api/review", {
+      team: $("team").value, author: $("author").value, filename: $("filename").value,
+      language: $("language").value, code: $("code").value, use_memory: $("useMemory").checked,
+    });
+    currentReview = r; renderReview(r);
+    $("timing").textContent = `recall ${r.timing_ms.recall} ms · review ${r.timing_ms.review} ms`;
+  } catch (e) { $("results").innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  btn.disabled = false; btn.textContent = "Review";
+};
+
+function renderReview(r) {
+  const cards = r.suggestions.map(s => `
+    <div class="card ${esc(s.severity)}" id="s-${s.id}">
+      <h3>${esc(s.title)}</h3>
+      <div class="meta">
+        <span class="pill">${esc(s.severity)}</span><span class="pill">${esc(s.category)}</span>
+        ${s.line ? `<span class="pill">line ${esc(s.line)}</span>` : ""}
+        ${s.recurring ? `<span class="pill recurring">recurring for ${esc($("author").value)}</span>` : ""}
+      </div>
+      <div>${esc(s.explanation)}</div>
+      ${s.memory_basis ? `<div class="membasis">${esc(s.memory_basis)}</div>` : ""}
+      ${s.suggested_fix ? `<pre class="fix">${esc(s.suggested_fix)}</pre>` : ""}
+      <div class="actions">
+        <button class="good" onclick="decide('${s.id}', true)">Accept</button>
+        <button class="bad" onclick="decide('${s.id}', false)">Reject</button>
+        <input id="reason-${s.id}" placeholder="reason (optional, but it teaches the agent)" />
+        <span class="verdict" id="v-${s.id}"></span>
+      </div>
+    </div>`).join("");
+  const skipped = (r.skipped_due_to_memory || []).length
+    ? `<div class="skipped">🧠 Skipped because your team rejected it before:<ul>${r.skipped_due_to_memory.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : "";
+  $("results").innerHTML = `<div class="summary">${esc(r.summary)} ${r.used_memory ? "" : "<b>(memory OFF)</b>"}</div>${cards || '<div class="empty">No issues found.</div>'}${skipped}`;
+  const rc = $("recalled");
+  rc.className = "memlist" + (r.memories_used.length ? "" : " empty");
+  rc.innerHTML = r.memories_used.length
+    ? r.memories_used.map(m => `<div><b>${esc(tagLabel(m))}</b> — ${esc(m.text)}</div>`).join("")
+    : (r.used_memory ? "No relevant memories yet — this team is new." : "Memory disabled for this review.");
+}
+
+window.decide = async (sid, accepted) => {
+  const reason = $("reason-" + sid).value;
+  const v = $("v-" + sid); v.className = "verdict"; v.textContent = "saving to memory…";
+  try {
+    const r = await api("/api/verdict", {review_id: currentReview.review_id, suggestion_id: sid,
+                                         accepted, reason, reviewer: "lead"});
+    v.className = "verdict " + (accepted ? "accepted" : "rejected");
+    v.textContent = (accepted ? "✓ accepted" : "✗ rejected") + " · retained in " + r.saved_to_bank;
+    $("s-" + sid).querySelectorAll("button").forEach(b => b.disabled = true);
+    loadBank();
+  } catch (e) { v.className = "verdict err"; v.textContent = e.message; }
+};
+
+$("ruleBtn").onclick = async () => {
+  const rule = $("rule").value.trim(); if (!rule) return;
+  $("ruleStatus").textContent = "saving…";
+  try {
+    await api("/api/rules", {team: $("team").value, rule, author: $("author").value, kind: $("ruleKind").value});
+    $("ruleStatus").textContent = "✓ remembered: " + rule; $("rule").value = ""; loadBank();
+  } catch (e) { $("ruleStatus").textContent = e.message; }
+};
+
+$("insightBtn").onclick = async () => {
+  const el = $("insights"); el.className = ""; el.textContent = "Reflecting over team memory…";
+  try { el.textContent = (await api("/api/insights", {team: $("team").value})).insights; }
+  catch (e) { el.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+};
+
+async function loadBank() {
+  const el = $("bankMem");
+  try {
+    const r = await api("/api/memories?team=" + encodeURIComponent($("team").value));
+    $("bank").textContent = "hindsight bank: " + r.bank_id;
+    el.className = "memlist" + (r.memories.length ? "" : " empty");
+    el.innerHTML = r.memories.length
+      ? r.memories.map(m => `<div><b>${esc(tagLabel(m))}</b> — ${esc(m.text)}</div>`).join("")
+      : "Empty — review some code and accept/reject suggestions.";
+  } catch (e) { el.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+}
+$("refreshMem").onclick = loadBank;
+$("team").onchange = loadBank;
+$("sample").value = Object.keys(SAMPLES)[0]; $("sample").onchange({target: $("sample")});
+loadBank();
+</script>
+</body>
+</html>
