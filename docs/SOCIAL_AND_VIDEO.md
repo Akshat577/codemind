@@ -76,6 +76,18 @@ Video:
 
 ---
 
-## 4. Thumbnail prompt (Google Nano Banana, upload your photo)
+## 4. Thumbnail
+
+Ready-made: [`docs/thumbnail/thumbnail.png`](thumbnail/thumbnail.png) (1280x720). To add your photo on the right:
+
+```bash
+pip install playwright && playwright install chromium
+python docs/thumbnail/render.py --photo path/to/me.png   # -> docs/thumbnail/thumbnail-photo.png
+```
+
+Use a portrait with the background removed (e.g. remove.bg) for the cleanest result.
+
+**Alternative: Google Nano Banana prompt** (upload your photo with it)
+
 
 "Create a YouTube thumbnail, 16:9, 1280x720. Use the uploaded photo of me on the right third, looking at the camera with a curious expression, cleanly cut out. Left side: dark code editor background with a glowing purple brain icon above a code review comment card. One card is crossed out in red with the label 'REJECTED', and a second card has a green check. Large bold white text on the left: 'IT REMEMBERS'. Smaller text below: 'AI code review with memory'. High contrast, clean, modern tech style, no other text."

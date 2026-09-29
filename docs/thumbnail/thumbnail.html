@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1280px; height: 720px; overflow: hidden; }
+  body { position: relative; font-family: Inter, sans-serif; color: #fff;
+         background: radial-gradient(900px 600px at 78% 40%, rgba(124,108,246,.38), transparent 60%),
+                     radial-gradient(700px 500px at 0% 100%, rgba(176,108,246,.22), transparent 60%), #08090e; }
+  /* faint code in the background */
+  .bgcode { position: absolute; right: 40px; bottom: 24px; padding: 0; font: 500 22px/34px "JetBrains Mono", monospace;
+            color: rgba(255,255,255,.045); white-space: pre; }
+
+  .brand { position: absolute; left: 64px; top: 52px; display: flex; align-items: center; gap: 14px;
+           font-weight: 800; font-size: 30px; letter-spacing: -.01em; }
+  .logo { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center;
+          background: linear-gradient(135deg, #7c6cf6, #b06cf6); box-shadow: 0 10px 30px rgba(124,108,246,.55); }
+
+  .headline { position: absolute; left: 60px; top: 168px; width: 640px; }
+  .headline > div:not(.sub) { font-weight: 900; line-height: .95; letter-spacing: -.035em; text-transform: uppercase; }
+  .l1 { font-size: 70px; }
+  .l2 { font-size: 104px; width: max-content; padding-right: 8px; background: linear-gradient(90deg, #a898ff, #d58bff); -webkit-background-clip: text; color: transparent;
+        filter: drop-shadow(0 6px 30px rgba(160,130,255,.45)); margin: 6px 0 10px; }
+  .l3 { font-size: 70px; }
+  .l3 span { color: #ff5c6c; }
+  .sub { margin-top: 34px; font-size: 32px; font-weight: 600; color: #b9bfd0; }
+  .sub b { color: #fff; }
+
+  /* review cards */
+  .cards { position: absolute; right: 52px; top: 190px; width: 470px; }
+  .card { background: #151923; border: 2px solid #2a3040; border-radius: 20px; padding: 24px 26px; position: relative;
+          box-shadow: 0 24px 60px rgba(0,0,0,.55); }
+  .card + .card { margin-top: 30px; }
+  .c1 { transform: rotate(-3deg); }
+  .c2 { transform: rotate(2deg) translateX(-24px); border-color: #8f7cff; box-shadow: 0 24px 70px rgba(124,108,246,.45); }
+  .tag { display: inline-block; font: 700 18px "JetBrains Mono", monospace; padding: 4px 12px; border-radius: 8px;
+         background: #262c3a; color: #aab1c3; margin-bottom: 12px; }
+  .card h3 { font-size: 34px; font-weight: 800; letter-spacing: -.02em; }
+  .c1 h3 { color: #6f778b; text-decoration: line-through; text-decoration-thickness: 4px; text-decoration-color: #ff5c6c; }
+  .stamp { position: absolute; right: -18px; top: -26px; transform: rotate(10deg); border: 5px solid #ff5c6c; color: #ff5c6c;
+           font-weight: 900; font-size: 38px; letter-spacing: .06em; padding: 2px 16px; border-radius: 10px; background: rgba(8,9,14,.85); }
+  .mem { display: flex; align-items: center; gap: 14px; }
+  .mem .ico { width: 56px; height: 56px; border-radius: 14px; display: grid; place-items: center; background: rgba(160,130,255,.18); flex-shrink: 0; }
+  .c2 .label { font: 700 17px "JetBrains Mono", monospace; letter-spacing: .08em; color: #b69cff; }
+  .c2 h3 { font-size: 30px; margin-top: 2px; }
+  .arrow { position: absolute; left: -84px; top: 170px; }
+
+  /* photo variant */
+  .photo { display: none; position: absolute; right: 0; bottom: 0; height: 690px; width: 520px; object-fit: cover; object-position: top center;
+           -webkit-mask-image: linear-gradient(to left, #000 70%, transparent), linear-gradient(to top, #000 85%, transparent);
+           -webkit-mask-composite: source-in; }
+  body.has-photo .photo { display: block; }
+  body.has-photo .cards { right: 300px; top: 372px; width: 480px; transform: scale(.8); transform-origin: top right; z-index: 2; }
+  body.has-photo .bgcode { display: none; }
+  body.has-photo .headline { width: 700px; }
+  body.has-photo .sub { display: none; }
+  body.has-photo .arrow { display: none; }
+</style>
+</head>
+<body>
+<div class="bgcode">def refund(order):
+    amount = order.total * 0.9
+    try:
+        resp = requests.post(url, json=payload)
+        return resp.json()
+    except:
+        print("refund failed")
+
+def charge(user, amount):
+    total = amount * 1.18
+    ...</div>
+
+<div class="brand">
+  <div class="logo"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M13.5 4l-3 16"/></svg></div>
+  CodeMind
+</div>
+
+<div class="headline">
+  <div class="l1">My AI reviewer</div>
+  <div class="l2">remembers</div>
+  <div class="l3">what we <span>rejected</span></div>
+  <div class="sub">Code review with <b>long-term memory</b></div>
+</div>
+
+<div class="cards">
+  <div class="card c1">
+    <div class="stamp">REJECTED</div>
+    <div class="tag">PR #41 · style</div>
+    <h3>Add type hints</h3>
+  </div>
+  <svg class="arrow" width="70" height="60" viewBox="0 0 70 60" fill="none" stroke="#8f7cff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8c10 30 30 40 54 40M50 36l12 12-14 8"/></svg>
+  <div class="card c2">
+    <div class="tag" style="background:rgba(160,130,255,.16);color:#c9b8ff">PR #42</div>
+    <div class="mem">
+      <div class="ico"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c9b8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/><path d="M4 11v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/></svg></div>
+      <div><div class="label">FROM TEAM MEMORY</div><h3>Skipped. You said no.</h3></div>
+    </div>
+  </div>
+</div>
+
+<img class="photo" id="photo" alt="" />
+<script>
+  const p = new URLSearchParams(location.search).get("photo");
+  if (p) { document.getElementById("photo").src = p; document.body.classList.add("has-photo"); }
+</script>
+</body>
+</html>
