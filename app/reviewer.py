@@ -71,7 +71,7 @@ def _parse_json(text: str) -> dict:
 class Reviewer:
     def __init__(self, client: Groq | None = None, model: str | None = None):
         self.client = client or Groq(api_key=os.getenv("GROQ_API_KEY"))
-        self.model = model or os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+        self.model = model or os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
     def review(self, *, code: str, language: str, filename: str, author: str,
                memories: list[Memory]) -> dict:
