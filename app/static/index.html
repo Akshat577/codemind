@@ -3,140 +3,391 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CodeMind — code review that remembers</title>
+<title>CodeMind</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%237c6cf6'/><path d='M10 12l-4 4 4 4M22 12l4 4-4 4M18 9l-4 14' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --border: #2a2f3a;
-    --text: #e6e8ee; --muted: #8b93a7; --accent: #6ea8fe; --good: #3fb950;
-    --bad: #f85149; --warn: #d29922; --mem: #b392f0;
+    --bg: #0b0d12; --bg2: #0f1218; --surface: #141821; --surface2: #1a1f2a; --surface3: #222836;
+    --border: #262c3a; --border2: #323a4c;
+    --text: #e8eaf0; --text2: #aab1c3; --muted: #6f778b;
+    --brand: #7c6cf6; --brand2: #9d90ff; --brand-soft: rgba(124,108,246,.14);
+    --crit: #ff5c6c; --major: #f5a524; --minor: #4ea1ff; --nit: #8b93a7;
+    --good: #2fcf7a; --good-soft: rgba(47,207,122,.12); --bad: #ff5c6c; --bad-soft: rgba(255,92,108,.12);
+    --mem: #b69cff; --mem-soft: rgba(182,156,255,.10);
+    --shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 8px 24px rgba(0,0,0,.25);
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --radius: 12px;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #f5f6fa; --bg2: #eef0f5; --surface: #ffffff; --surface2: #f7f8fb; --surface3: #eef0f5;
+    --border: #e3e6ee; --border2: #d3d8e3;
+    --text: #151823; --text2: #4a5163; --muted: #858c9e;
+    --brand: #6453f0; --brand2: #5543e6; --brand-soft: rgba(100,83,240,.10);
+    --mem: #7351e8; --mem-soft: rgba(115,81,232,.08);
+    --shadow: 0 1px 2px rgba(20,24,40,.05), 0 6px 20px rgba(20,24,40,.06);
+    color-scheme: light;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
-         background: var(--bg); color: var(--text); }
-  header { display: flex; align-items: center; gap: 12px; padding: 14px 20px;
-           border-bottom: 1px solid var(--border); }
-  header h1 { font-size: 18px; margin: 0; }
-  header .tag { color: var(--muted); }
-  header .bank { margin-left: auto; color: var(--mem); font-family: ui-monospace, monospace; font-size: 12px; }
-  main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; padding: 16px 20px; }
-  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
-  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
-  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
-  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-  input, select, textarea { background: var(--panel2); color: var(--text); border: 1px solid var(--border);
-         border-radius: 6px; padding: 7px 9px; font: inherit; }
-  input { flex: 1; min-width: 110px; }
-  textarea { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
-  #code { min-height: 340px; resize: vertical; }
-  button { background: var(--accent); color: #0b1020; border: 0; border-radius: 6px; padding: 8px 14px;
-           font-weight: 600; cursor: pointer; font: inherit; font-weight: 600; }
-  button.secondary { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
-  button.good { background: var(--good); color: #04150a; }
-  button.bad { background: var(--bad); color: #1a0405; }
-  button:disabled { opacity: .5; cursor: wait; }
-  label.toggle { display: flex; align-items: center; gap: 6px; color: var(--muted); }
-  .stack > * + * { margin-top: 16px; }
-  .summary { color: var(--muted); margin-bottom: 10px; }
-  .card { border: 1px solid var(--border); border-left: 4px solid var(--muted); border-radius: 8px;
-          padding: 10px 12px; margin-bottom: 10px; background: var(--panel2); }
-  .card.critical { border-left-color: var(--bad); } .card.major { border-left-color: var(--warn); }
-  .card.minor { border-left-color: var(--accent); } .card.nit { border-left-color: var(--muted); }
-  .card h3 { margin: 0 0 4px; font-size: 14px; }
-  .meta { font-size: 12px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
-  .pill { border: 1px solid var(--border); border-radius: 99px; padding: 0 8px; }
-  .pill.recurring { color: var(--warn); border-color: var(--warn); }
-  .membasis { color: var(--mem); font-size: 12px; margin: 6px 0; }
-  .membasis::before { content: "🧠 "; }
-  pre.fix { background: #0b0d12; border-radius: 6px; padding: 8px; overflow-x: auto; margin: 6px 0;
-            font-size: 12px; white-space: pre-wrap; }
-  .actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-  .actions input { font-size: 12px; }
-  .verdict { font-weight: 600; font-size: 12px; }
-  .verdict.accepted { color: var(--good); } .verdict.rejected { color: var(--bad); }
-  .skipped { color: var(--mem); font-size: 13px; }
-  .memlist { font-size: 12px; color: var(--muted); max-height: 260px; overflow-y: auto; }
-  .memlist div { padding: 5px 0; border-bottom: 1px dashed var(--border); }
-  .memlist b { color: var(--mem); font-weight: 500; }
-  .empty { color: var(--muted); font-style: italic; }
-  #insights { white-space: pre-wrap; font-size: 13px; }
-  .err { color: var(--bad); }
-  .timing { font-size: 12px; color: var(--muted); }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.55 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         -webkit-font-smoothing: antialiased; }
+  button { font: inherit; cursor: pointer; }
+  input, select, textarea { font: inherit; color: var(--text); }
+  svg { flex-shrink: 0; }
+
+  /* ---------- top bar ---------- */
+  .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 18px;
+            padding: 12px 22px; background: color-mix(in srgb, var(--bg) 85%, transparent);
+            backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center;
+          background: linear-gradient(135deg, var(--brand), #b06cf6); color: #fff;
+          box-shadow: 0 4px 14px rgba(124,108,246,.35); }
+  .brand h1 { font-size: 16px; margin: 0; letter-spacing: -.01em; }
+  .brand p { margin: 0; font-size: 12px; color: var(--muted); }
+  .who { display: flex; gap: 8px; margin-left: 12px; }
+  .field { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border);
+           border-radius: 8px; padding: 0 10px; height: 34px; }
+  .field label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+  .field input, .field select { background: none; border: 0; outline: 0; width: 110px; height: 100%; }
+  .field select { width: auto; }
+  .field:focus-within { border-color: var(--brand); }
+  .spacer { flex: 1; }
+  .bankpill { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text2);
+              background: var(--mem-soft); border: 1px solid color-mix(in srgb, var(--mem) 30%, transparent);
+              padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+  .bankpill b { color: var(--mem); font-weight: 600; font-family: var(--mono); font-size: 11.5px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.ok { background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); }
+  .dot.err { background: var(--bad); box-shadow: 0 0 0 3px var(--bad-soft); }
+  .iconbtn { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px;
+             background: var(--surface); border: 1px solid var(--border); color: var(--text2); }
+  .iconbtn:hover { color: var(--text); border-color: var(--border2); }
+
+  /* ---------- flow stepper ---------- */
+  .flow { display: flex; align-items: center; gap: 0; padding: 14px 22px 0; max-width: 1500px; margin: 0 auto; }
+  .step { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; font-weight: 500; white-space: nowrap; }
+  .step .num { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 11px;
+               border: 1.5px solid var(--border2); background: var(--surface); transition: all .25s; }
+  .step.active { color: var(--text); }
+  .step.active .num { border-color: var(--brand); color: var(--brand2); animation: pulse 1.2s infinite; }
+  .step.done { color: var(--text2); }
+  .step.done .num { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .step.memstep .num { border-style: dashed; }
+  .step.memstep.done .num { background: var(--mem); border-color: var(--mem); border-style: solid; }
+  .bar { flex: 1; height: 2px; margin: 0 10px; min-width: 16px; background: var(--border); border-radius: 2px; position: relative; overflow: hidden; }
+  .bar.done::after { content: ""; position: absolute; inset: 0; background: var(--brand); animation: fill .35s ease-out; }
+  @keyframes fill { from { transform: translateX(-100%); } }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(124,108,246,.5); } 50% { box-shadow: 0 0 0 6px rgba(124,108,246,0); } }
+
+  /* ---------- layout ---------- */
+  main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 18px;
+         padding: 16px 22px 28px; max-width: 1500px; margin: 0 auto; }
+  @media (max-width: 1000px) { main { grid-template-columns: minmax(0, 1fr); } .who { display: none; } .flow { overflow-x: auto; }
+    body .editor-card { position: static; height: 560px; min-height: 0; } body .side { min-height: 0; } }
+  @media (max-width: 640px) {
+    .topbar { padding: 10px 16px; gap: 10px; } .brand p { display: none; }
+    .bankpill { padding: 6px 10px; } .bankpill > span:not(.dot), .bankpill #bankcount { display: none; }
+    .bankpill b { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .flow { padding: 12px 16px 0; } .step { font-size: 0; gap: 0; } .step .num { font-size: 11px; }
+    main { padding: 12px 16px 24px; gap: 14px; } body .stats { grid-template-columns: repeat(2, 1fr); }
+    body .editor-foot { flex-wrap: wrap; } body .editor-foot .timing { order: 3; width: 100%; } body kbd { display: none; }
+    body .decide { flex-wrap: wrap; } body .decide input { flex: 1 1 100%; }
+    #toasts { left: 16px; right: 16px; } .toast { max-width: none; }
+  }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+
+  /* ---------- editor ---------- */
+  .editor-card { display: flex; flex-direction: column; min-height: 640px; position: sticky; top: 76px; height: calc(100vh - 140px); }
+  .tabs-files { display: flex; gap: 2px; padding: 8px 8px 0; border-bottom: 1px solid var(--border); overflow-x: auto; }
+  .ftab { display: flex; align-items: center; gap: 7px; padding: 8px 12px; border: 0; background: none; color: var(--muted);
+          border-radius: 8px 8px 0 0; font-size: 12.5px; font-family: var(--mono); white-space: nowrap; border-bottom: 2px solid transparent; }
+  .ftab:hover { color: var(--text2); background: var(--surface2); }
+  .ftab.on { color: var(--text); background: var(--surface2); border-bottom-color: var(--brand); }
+  .ftab .pydot { width: 8px; height: 8px; border-radius: 2px; background: #f5c542; }
+  .filebar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .filebar input { flex: 1; background: none; border: 0; outline: 0; font-family: var(--mono); font-size: 12.5px; color: var(--text2); }
+  .filebar select { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; font-size: 12px; }
+  .editor { flex: 1; display: flex; min-height: 0; background: var(--bg2); position: relative; }
+  .gutter { padding: 14px 0; min-width: 52px; text-align: right; font: 13px/21px var(--mono); color: var(--muted);
+            background: var(--bg2); border-right: 1px solid var(--border); overflow: hidden; user-select: none; }
+  .gutter div { padding: 0 12px 0 16px; position: relative; }
+  .gutter div.m::before { content: ""; position: absolute; left: 5px; top: 6px; width: 7px; height: 7px; border-radius: 50%; }
+  .gutter div.m-critical { color: var(--crit); } .gutter div.m-critical::before { background: var(--crit); }
+  .gutter div.m-major { color: var(--major); } .gutter div.m-major::before { background: var(--major); }
+  .gutter div.m-minor { color: var(--minor); } .gutter div.m-minor::before { background: var(--minor); }
+  .gutter div.m-nit::before { background: var(--nit); }
+  #code { flex: 1; resize: none; border: 0; outline: 0; background: transparent; padding: 14px 16px;
+          font: 13px/21px var(--mono); color: var(--text); white-space: pre; overflow: auto; tab-size: 4; }
+  .editor-foot { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-top: 1px solid var(--border); }
+  .switch { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; font-size: 13px; color: var(--text2); }
+  .switch input { display: none; }
+  .track { width: 38px; height: 22px; border-radius: 999px; background: var(--surface3); border: 1px solid var(--border2); position: relative; transition: .2s; }
+  .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); transition: .2s; }
+  .switch input:checked + .track { background: var(--mem); border-color: var(--mem); }
+  .switch input:checked + .track::after { left: 18px; background: #fff; }
+  .switch small { display: block; font-size: 11px; color: var(--muted); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid transparent; border-radius: 9px;
+         padding: 9px 16px; font-weight: 600; font-size: 13.5px; transition: .15s; }
+  .btn-primary { background: var(--brand); color: #fff; box-shadow: 0 4px 14px rgba(124,108,246,.3); }
+  .btn-primary:hover { background: var(--brand2); }
+  .btn-ghost { background: var(--surface2); border-color: var(--border); color: var(--text); }
+  .btn-ghost:hover { border-color: var(--border2); }
+  .btn:disabled { opacity: .6; cursor: progress; }
+  kbd { font: 11px var(--mono); padding: 1px 5px; border-radius: 4px; background: rgba(255,255,255,.18); }
+  .timing { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .spin { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: rot .7s linear infinite; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+
+  /* ---------- side panel ---------- */
+  .side { display: flex; flex-direction: column; min-height: 640px; }
+  .tabs { display: flex; gap: 4px; padding: 8px; border-bottom: 1px solid var(--border); }
+  .tab { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 8px; border: 0; background: none;
+         color: var(--muted); font-weight: 500; font-size: 13.5px; }
+  .tab:hover { color: var(--text2); background: var(--surface2); }
+  .tab.on { color: var(--text); background: var(--surface2); }
+  .count { font-size: 11px; font-weight: 600; background: var(--surface3); color: var(--text2); border-radius: 999px; padding: 1px 7px; }
+  .tab.on .count { background: var(--brand-soft); color: var(--brand2); }
+  .panel { display: none; padding: 16px; overflow-y: auto; }
+  .panel.on { display: block; }
+
+  .empty { display: grid; place-items: center; text-align: center; padding: 56px 20px; color: var(--muted); }
+  .empty .ico { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: var(--surface2);
+                border: 1px solid var(--border); color: var(--mem); margin-bottom: 14px; }
+  .empty h3 { margin: 0 0 4px; color: var(--text); font-size: 15px; }
+  .empty p { margin: 0; max-width: 340px; font-size: 13px; }
+
+  .summary { border: 1px solid var(--border); background: var(--surface2); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+  .summary p { margin: 0 0 12px; color: var(--text2); }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+  .stat b { display: block; font-size: 18px; letter-spacing: -.02em; }
+  .stat span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+  .stat.memstat b { color: var(--mem); }
+  .banner { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; padding: 10px 12px; border-radius: 8px;
+            margin-bottom: 14px; background: var(--surface2); border: 1px dashed var(--border2); color: var(--text2); }
+
+  .sugg { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); margin-bottom: 12px; overflow: hidden;
+          position: relative; transition: .2s; animation: rise .3s ease-out both; }
+  .sugg::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--nit); }
+  .sugg.sev-critical::before { background: var(--crit); } .sugg.sev-major::before { background: var(--major); }
+  .sugg.sev-minor::before { background: var(--minor); }
+  .sugg:hover { border-color: var(--border2); }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  .sugg-body { padding: 14px 16px 12px 18px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; align-items: center; }
+  .chip { font-size: 11px; font-weight: 600; letter-spacing: .03em; padding: 2px 8px; border-radius: 6px;
+          background: var(--surface3); color: var(--text2); border: 0; }
+  .chip.sev { text-transform: uppercase; }
+  .chip.sev-critical { background: var(--bad-soft); color: var(--crit); }
+  .chip.sev-major { background: rgba(245,165,36,.13); color: var(--major); }
+  .chip.sev-minor { background: rgba(78,161,255,.13); color: var(--minor); }
+  .chip.line { font-family: var(--mono); cursor: pointer; }
+  .chip.line:hover { color: var(--brand2); }
+  .chip.rec { background: rgba(245,165,36,.13); color: var(--major); display: inline-flex; gap: 4px; align-items: center; }
+  .sugg h3 { margin: 0 0 4px; font-size: 14.5px; letter-spacing: -.005em; }
+  .sugg p { margin: 0; color: var(--text2); font-size: 13.5px; }
+  .cite { display: flex; gap: 9px; margin-top: 10px; padding: 9px 11px; border-radius: 8px; background: var(--mem-soft);
+          border: 1px solid color-mix(in srgb, var(--mem) 22%, transparent); font-size: 12.5px; color: var(--text2); }
+  .cite svg { color: var(--mem); margin-top: 2px; }
+  .cite b { color: var(--mem); font-weight: 600; display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  details.fix { margin-top: 10px; }
+  details.fix summary { cursor: pointer; font-size: 12.5px; color: var(--muted); font-weight: 500; list-style: none; display: inline-flex; gap: 6px; align-items: center; }
+  details.fix summary::-webkit-details-marker { display: none; }
+  details.fix summary::before { content: "▸"; transition: .15s; }
+  details.fix[open] summary::before { transform: rotate(90deg); }
+  details.fix pre { margin: 8px 0 0; padding: 10px 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+                    font: 12.5px/1.6 var(--mono); overflow-x: auto; white-space: pre-wrap; }
+  .decide { display: flex; gap: 8px; padding: 10px 16px 12px 18px; border-top: 1px solid var(--border); background: var(--surface2); align-items: center; }
+  .decide input { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px; font-size: 12.5px; outline: 0; }
+  .decide input:focus { border-color: var(--brand); }
+  .vbtn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 7px; font-size: 12.5px; font-weight: 600; border: 1px solid var(--border); background: var(--surface); color: var(--text2); }
+  .vbtn.acc:hover { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+  .vbtn.rej:hover { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
+  .stamp { display: none; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; }
+  .sugg.decided .decide input, .sugg.decided .decide .vbtn { display: none; }
+  .sugg.decided .stamp { display: inline-flex; }
+  .sugg.decided .sugg-body { opacity: .6; }
+  .sugg.accepted .stamp { color: var(--good); } .sugg.rejected .stamp { color: var(--bad); }
+  .stamp small { color: var(--muted); font-weight: 400; font-family: var(--mono); font-size: 11.5px; }
+
+  .section-h { display: flex; align-items: center; gap: 8px; margin: 20px 0 10px; font-size: 11.5px; font-weight: 600;
+               text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .section-h::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+  .skipped { border: 1px dashed color-mix(in srgb, var(--mem) 40%, transparent); background: var(--mem-soft); border-radius: 10px; padding: 12px 14px; }
+  .skipped div { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--text2); padding: 3px 0; }
+  .skipped s { color: var(--muted); }
+
+  .mem { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .mem:last-child { border-bottom: 0; }
+  .kind { flex-shrink: 0; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+          padding: 2px 7px; border-radius: 5px; height: fit-content; margin-top: 1px; min-width: 74px; text-align: center; }
+  .k-rule { background: rgba(78,161,255,.13); color: var(--minor); }
+  .k-decision { background: rgba(0,200,200,.12); color: #2cc7c7; }
+  .k-accepted { background: var(--good-soft); color: var(--good); }
+  .k-rejected { background: var(--bad-soft); color: var(--bad); }
+  .k-mistake { background: rgba(245,165,36,.13); color: var(--major); }
+  .k-learned { background: var(--mem-soft); color: var(--mem); }
+  .mem .t { color: var(--text2); }
+  .mem .d { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+
+  .teach { border: 1px solid var(--border); background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 14px; }
+  .teach h4 { margin: 0 0 8px; font-size: 13px; display: flex; align-items: center; gap: 7px; }
+  .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 2px; margin-bottom: 8px; }
+  .seg button { border: 0; background: none; color: var(--muted); padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: 500; }
+  .seg button.on { background: var(--surface3); color: var(--text); }
+  .teach-row { display: flex; gap: 8px; }
+  .teach-row input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; outline: 0; font-size: 13px; }
+  .teach-row input:focus { border-color: var(--brand); }
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+  .fchip { border: 1px solid var(--border); background: var(--surface); color: var(--text2); border-radius: 999px; padding: 3px 10px; font-size: 12px; }
+  .fchip.on { background: var(--brand-soft); border-color: var(--brand); color: var(--brand2); }
+  .search { flex: 1; min-width: 120px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; font-size: 12.5px; outline: 0; }
+
+  .insights { font-size: 13.5px; color: var(--text2); }
+  .insights h1, .insights h2, .insights h3 { font-size: 14px; color: var(--text); margin: 16px 0 6px; }
+  .insights ul { padding-left: 18px; margin: 6px 0; } .insights li { margin: 4px 0; }
+  .insights strong { color: var(--text); }
+  .insight-hero { border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px;
+                  background: linear-gradient(135deg, var(--mem-soft), transparent 70%); }
+  .insight-hero h3 { margin: 0 0 4px; font-size: 15px; } .insight-hero p { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+  .skel { height: 12px; border-radius: 6px; background: linear-gradient(90deg, var(--surface2), var(--surface3), var(--surface2));
+          background-size: 200% 100%; animation: sh 1.2s infinite; margin: 10px 0; }
+  @keyframes sh { to { background-position: -200% 0; } }
+
+  #toasts { position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }
+  .toast { display: flex; gap: 10px; align-items: center; max-width: 420px; padding: 10px 14px; border-radius: 10px; font-size: 13px;
+           background: var(--surface); border: 1px solid var(--border2); box-shadow: 0 10px 30px rgba(0,0,0,.35); animation: rise .25s ease-out; }
+  .toast.err { border-color: var(--bad); } .toast.mem { border-color: var(--mem); }
+  .toast .ti { color: var(--mem); } .toast.err .ti { color: var(--bad); }
 </style>
 </head>
 <body>
-<header>
-  <h1>🧠 CodeMind</h1>
-  <span class="tag">code review that remembers your team</span>
-  <span class="bank" id="bank"></span>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M13.5 4l-3 16"/></svg></div>
+    <div><h1>CodeMind</h1><p>Code review that remembers your team</p></div>
+  </div>
+  <div class="who">
+    <div class="field"><label for="team">Team</label><input id="team" value="demo-team" /></div>
+    <div class="field"><label for="author">Author</label><input id="author" value="ravi" /></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="bankpill" id="bankpill" title="Hindsight memory bank for this team">
+    <span class="dot" id="bankdot"></span>
+    <span>Hindsight</span><b id="bankid">codemind-demo-team</b><span id="bankcount">·</span>
+  </div>
+  <button class="iconbtn" id="themeBtn" title="Toggle theme">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+  </button>
 </header>
 
+<nav class="flow" id="flow">
+  <div class="step" data-step="submit"><span class="num">1</span>Submit code</div><div class="bar"></div>
+  <div class="step memstep" data-step="recall"><span class="num">2</span>Recall memory</div><div class="bar"></div>
+  <div class="step" data-step="review"><span class="num">3</span>AI review</div><div class="bar"></div>
+  <div class="step" data-step="decide"><span class="num">4</span>Accept / Reject</div><div class="bar"></div>
+  <div class="step memstep" data-step="retain"><span class="num">5</span>Retain to memory</div>
+</nav>
+
 <main>
-  <section class="stack">
-    <div class="panel">
-      <h2>Submit code</h2>
-      <div class="row">
-        <input id="team" value="demo-team" title="Team (one Hindsight memory bank per team)" placeholder="team" />
-        <input id="author" value="ravi" placeholder="author" />
-        <input id="filename" value="payments/service.py" placeholder="filename" />
-        <select id="language">
-          <option>python</option><option>javascript</option><option>typescript</option>
-          <option>java</option><option>go</option><option>sql</option>
-        </select>
-      </div>
-      <div class="row">
-        <select id="sample" class="secondary" title="Load a demo snippet">
-          <option value="">Load demo snippet…</option>
-        </select>
-      </div>
-      <textarea id="code" spellcheck="false" placeholder="Paste code or a diff here"></textarea>
-      <div class="row" style="margin-top:8px; align-items:center">
-        <button id="reviewBtn">Review</button>
-        <label class="toggle"><input type="checkbox" id="useMemory" checked style="flex:0;min-width:0" /> use team memory (Hindsight)</label>
-        <span class="timing" id="timing"></span>
-      </div>
+  <!-- ======== editor ======== -->
+  <section class="card editor-card">
+    <div class="tabs-files" id="fileTabs"></div>
+    <div class="filebar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+      <input id="filename" value="payments/service.py" spellcheck="false" />
+      <select id="language">
+        <option>python</option><option>javascript</option><option>typescript</option>
+        <option>java</option><option>go</option><option>sql</option>
+      </select>
     </div>
-
-    <div class="panel">
-      <h2>Teach a rule or decision</h2>
-      <div class="row">
-        <select id="ruleKind"><option value="rule">coding standard</option><option value="decision">architecture decision</option></select>
-        <input id="rule" placeholder="e.g. All money values are integers in paise, never floats" />
-        <button class="secondary" id="ruleBtn">Remember</button>
-      </div>
-      <div class="timing" id="ruleStatus"></div>
+    <div class="editor">
+      <div class="gutter" id="gutter"></div>
+      <textarea id="code" spellcheck="false" wrap="off" placeholder="Paste code or a diff…"></textarea>
     </div>
-
-    <div class="panel">
-      <h2>Team insights (Hindsight reflect)</h2>
-      <div class="row"><button class="secondary" id="insightBtn">What has CodeMind learned about this team?</button></div>
-      <div id="insights" class="empty">Nothing yet.</div>
+    <div class="editor-foot">
+      <label class="switch">
+        <input type="checkbox" id="useMemory" checked /><span class="track"></span>
+        <span>Team memory<small id="memHint">Recall rules &amp; past verdicts from Hindsight</small></span>
+      </label>
+      <div class="spacer"></div>
+      <span class="timing" id="timing"></span>
+      <button class="btn btn-primary" id="reviewBtn">
+        <span id="reviewIco"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>
+        <span id="reviewLbl">Review</span><kbd>⌘↵</kbd>
+      </button>
     </div>
   </section>
 
-  <section class="stack">
-    <div class="panel">
-      <h2>Review</h2>
-      <div id="results" class="empty">Submit code to get a review.</div>
+  <!-- ======== side ======== -->
+  <section class="card side">
+    <div class="tabs">
+      <button class="tab on" data-tab="review">Review <span class="count" id="cReview">0</span></button>
+      <button class="tab" data-tab="memory">Memory <span class="count" id="cMemory">0</span></button>
+      <button class="tab" data-tab="insights">Insights</button>
     </div>
-    <div class="panel">
-      <h2>Memories recalled for this review</h2>
-      <div id="recalled" class="memlist empty">—</div>
+
+    <div class="panel on" id="p-review">
+      <div class="empty">
+        <div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04z"/></svg></div>
+        <h3>Ready when you are</h3>
+        <p>Pick a demo file or paste your own, then hit Review. CodeMind recalls what your team taught it before it says a word.</p>
+      </div>
     </div>
-    <div class="panel">
-      <h2>Memory bank <button class="secondary" id="refreshMem" style="float:right;padding:2px 8px;font-size:12px">refresh</button></h2>
-      <div id="bankMem" class="memlist empty">—</div>
+
+    <div class="panel" id="p-memory">
+      <div class="teach">
+        <h4><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--mem)" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Teach CodeMind</h4>
+        <div class="seg" id="kindSeg"><button class="on" data-kind="rule">Coding standard</button><button data-kind="decision">Architecture decision</button></div>
+        <div class="teach-row">
+          <input id="rule" placeholder="e.g. Money is always integer paise, never floats" />
+          <button class="btn btn-ghost" id="ruleBtn">Remember</button>
+        </div>
+      </div>
+      <div class="filters" id="filters"></div>
+      <div id="memList"></div>
+    </div>
+
+    <div class="panel" id="p-insights">
+      <div class="insight-hero">
+        <h3>What has CodeMind learned about this team?</h3>
+        <p>Hindsight <code>reflect</code> reasons over every rule, verdict and mistake in the bank and writes the team's review profile.</p>
+        <button class="btn btn-primary" id="insightBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>
+          Reflect on team memory
+        </button>
+      </div>
+      <div class="insights" id="insights"></div>
     </div>
   </section>
 </main>
 
-<script>
-const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let currentReview = null;
+<div id="toasts"></div>
 
-const SAMPLES = {
-  "payments (float money, bare except)": {filename: "payments/service.py", language: "python", code:
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ICON = {
+  brain: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/><path d="M4 11v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/></svg>',
+  check: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>',
+  x: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  repeat: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>',
+  skip: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--mem)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>',
+  off: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>',
+};
+
+/* ---------------- demo files ---------------- */
+const SAMPLES = [
+  {filename: "payments/service.py", language: "python", code:
 `import requests
+
 
 def charge(user, amount):
     total = amount * 1.18  # add GST
@@ -148,8 +399,9 @@ def charge(user, amount):
         print("payment failed")
         return None
 `},
-  "refunds (same mistakes again)": {filename: "payments/refunds.py", language: "python", code:
+  {filename: "payments/refunds.py", language: "python", code:
 `import requests
+
 
 def refund(order):
     amount = order.total * 0.9
@@ -160,119 +412,270 @@ def refund(order):
     except:
         print("refund failed")
 `},
-  "users api (sql + print)": {filename: "api/users.py", language: "python", code:
+  {filename: "api/users.py", language: "python", code:
 `def get_user(db, user_id):
     print("fetching", user_id)
     q = f"SELECT * FROM users WHERE id = {user_id}"
     row = db.execute(q).fetchone()
     return {"id": row[0], "name": row[1], "email": row[2]}
 `},
-};
-for (const k of Object.keys(SAMPLES)) $("sample").insertAdjacentHTML("beforeend", `<option>${esc(k)}</option>`);
-$("sample").onchange = (e) => {
-  const s = SAMPLES[e.target.value]; if (!s) return;
-  $("code").value = s.code; $("filename").value = s.filename; $("language").value = s.language;
-};
+];
+let fileIdx = 0;
+function renderFileTabs() {
+  $("#fileTabs").innerHTML = SAMPLES.map((s, i) =>
+    `<button class="ftab ${i === fileIdx ? "on" : ""}" data-i="${i}"><span class="pydot"></span>${esc(s.filename.split("/").pop())}</button>`
+  ).join("");
+  $$(".ftab").forEach(b => b.onclick = () => loadSample(+b.dataset.i));
+}
+function loadSample(i, save = true) {
+  if (save) { SAMPLES[fileIdx].code = code.value; SAMPLES[fileIdx].filename = $("#filename").value; }
+  fileIdx = i; const s = SAMPLES[i];
+  code.value = s.code; $("#filename").value = s.filename; $("#language").value = s.language;
+  markers = {}; renderFileTabs(); renderGutter();
+}
 
+/* ---------------- editor ---------------- */
+const code = $("#code"), gutter = $("#gutter");
+let markers = {};
+const SEV_RANK = {critical: 4, major: 3, minor: 2, nit: 1};
+function renderGutter() {
+  const n = Math.max(code.value.split("\n").length, 1);
+  let html = "";
+  for (let i = 1; i <= n; i++) html += `<div class="${markers[i] ? "m m-" + markers[i] : ""}">${i}</div>`;
+  gutter.innerHTML = html; gutter.scrollTop = code.scrollTop;
+}
+code.addEventListener("input", renderGutter);
+code.addEventListener("scroll", () => gutter.scrollTop = code.scrollTop);
+code.addEventListener("keydown", (e) => {
+  if (e.key === "Tab") { e.preventDefault(); document.execCommand("insertText", false, "    "); }
+  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); runReview(); }
+});
+function jumpToLine(line) {
+  const lines = code.value.split("\n"); line = Math.min(Math.max(1, line), lines.length);
+  const start = lines.slice(0, line - 1).reduce((a, l) => a + l.length + 1, 0);
+  code.focus(); code.setSelectionRange(start, start + lines[line - 1].length);
+  code.scrollTop = Math.max(0, (line - 4) * 21);
+}
+
+/* ---------------- flow stepper ---------------- */
+const STEPS = ["submit", "recall", "review", "decide", "retain"];
+function flow(state) { // state: {stepName: "active"|"done"}
+  STEPS.forEach((s, i) => {
+    const el = $(`.step[data-step="${s}"]`); el.classList.remove("active", "done");
+    if (state[s]) el.classList.add(state[s]);
+    const bar = el.nextElementSibling;
+    if (bar?.classList.contains("bar")) bar.classList.toggle("done", state[s] === "done" && !!state[STEPS[i + 1]]);
+  });
+}
+
+/* ---------------- helpers ---------------- */
 async function api(path, body) {
-  const res = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"},
-                                         body: JSON.stringify(body)} : {});
+  const res = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {});
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.detail || res.statusText);
   return data;
 }
-
-function tagLabel(m) {
-  const t = (m.tags || []).filter(t => t.startsWith("kind:") || t.startsWith("verdict:")).join(" · ");
-  return t || m.type || "memory";
+function toast(msg, kind = "") {
+  const el = document.createElement("div");
+  el.className = "toast " + kind;
+  el.innerHTML = `<span class="ti">${kind === "err" ? ICON.off : ICON.brain}</span><span>${esc(msg)}</span>`;
+  $("#toasts").appendChild(el); setTimeout(() => el.remove(), kind === "err" ? 7000 : 3500);
 }
+function kindOf(m) {
+  const t = m.tags || [];
+  if (t.includes("verdict:accepted")) return "accepted";
+  if (t.includes("verdict:rejected")) return "rejected";
+  for (const k of ["rule", "decision", "mistake"]) if (t.includes("kind:" + k)) return k;
+  return "learned";
+}
+function memRow(m) {
+  const k = kindOf(m);
+  const d = m.date ? String(m.date).slice(0, 16).replace("T", " ") : "";
+  return `<div class="mem"><span class="kind k-${k}">${k}</span><div><div class="t">${esc(m.text)}</div>${d ? `<div class="d">${esc(d)}</div>` : ""}</div></div>`;
+}
+function switchTab(name) {
+  $$(".tab").forEach(t => t.classList.toggle("on", t.dataset.tab === name));
+  $$(".panel").forEach(p => p.classList.toggle("on", p.id === "p-" + name));
+}
+$$(".tab").forEach(t => t.onclick = () => switchTab(t.dataset.tab));
+$("#bankpill").onclick = () => switchTab("memory");
 
-$("reviewBtn").onclick = async () => {
-  const btn = $("reviewBtn"); btn.disabled = true; btn.textContent = "Reviewing…";
-  $("results").className = ""; $("results").innerHTML = '<span class="empty">Recalling team memory and reviewing…</span>';
+/* ---------------- review ---------------- */
+let currentReview = null;
+async function runReview() {
+  if (!code.value.trim()) return toast("Paste some code first", "err");
+  const btn = $("#reviewBtn"); btn.disabled = true;
+  $("#reviewIco").innerHTML = '<span class="spin"></span>';
+  const useMem = $("#useMemory").checked;
+  $("#reviewLbl").textContent = useMem ? "Recalling…" : "Reviewing…";
+  flow({submit: "done", recall: useMem ? "active" : undefined, review: useMem ? undefined : "active"});
+  const t = useMem && setTimeout(() => { flow({submit: "done", recall: "done", review: "active"}); $("#reviewLbl").textContent = "Reviewing…"; }, 900);
+  switchTab("review");
+  $("#p-review").innerHTML = `<div class="summary"><div class="skel" style="width:70%"></div><div class="skel" style="width:45%"></div></div>` +
+    [1, 2].map(() => `<div class="sugg"><div class="sugg-body"><div class="skel" style="width:30%"></div><div class="skel" style="width:85%"></div><div class="skel" style="width:60%"></div></div></div>`).join("");
   try {
     const r = await api("/api/review", {
-      team: $("team").value, author: $("author").value, filename: $("filename").value,
-      language: $("language").value, code: $("code").value, use_memory: $("useMemory").checked,
+      team: $("#team").value, author: $("#author").value, filename: $("#filename").value,
+      language: $("#language").value, code: code.value, use_memory: useMem,
     });
     currentReview = r; renderReview(r);
-    $("timing").textContent = `recall ${r.timing_ms.recall} ms · review ${r.timing_ms.review} ms`;
-  } catch (e) { $("results").innerHTML = `<span class="err">${esc(e.message)}</span>`; }
-  btn.disabled = false; btn.textContent = "Review";
-};
+    flow({submit: "done", recall: useMem ? "done" : undefined, review: "done", decide: r.suggestions.length ? "active" : undefined});
+    $("#timing").textContent = (useMem ? `recall ${r.timing_ms.recall}ms · ` : "") + `review ${(r.timing_ms.review / 1000).toFixed(1)}s`;
+  } catch (e) {
+    flow({});
+    $("#p-review").innerHTML = `<div class="empty"><div class="ico" style="color:var(--bad)">${ICON.off}</div><h3>Review failed</h3><p>${esc(e.message)}</p></div>`;
+    toast(e.message, "err");
+  }
+  clearTimeout(t);
+  btn.disabled = false; $("#reviewLbl").textContent = "Review";
+  $("#reviewIco").innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>';
+}
+$("#reviewBtn").onclick = runReview;
 
 function renderReview(r) {
-  const cards = r.suggestions.map(s => `
-    <div class="card ${esc(s.severity)}" id="s-${s.id}">
-      <h3>${esc(s.title)}</h3>
-      <div class="meta">
-        <span class="pill">${esc(s.severity)}</span><span class="pill">${esc(s.category)}</span>
-        ${s.line ? `<span class="pill">line ${esc(s.line)}</span>` : ""}
-        ${s.recurring ? `<span class="pill recurring">recurring for ${esc($("author").value)}</span>` : ""}
+  const author = $("#author").value;
+  const fromMem = r.suggestions.filter(s => s.memory_basis).length;
+  markers = {};
+  r.suggestions.forEach(s => { if (s.line && (SEV_RANK[s.severity] || 0) > (SEV_RANK[markers[s.line]] || 0)) markers[s.line] = s.severity; });
+  renderGutter();
+  $("#cReview").textContent = r.suggestions.length;
+
+  const order = (s) => -(SEV_RANK[s.severity] || 0);
+  const cards = [...r.suggestions].sort((a, b) => order(a) - order(b)).map((s, i) => `
+    <article class="sugg sev-${esc(s.severity)}" id="s-${s.id}" style="animation-delay:${i * 60}ms">
+      <div class="sugg-body">
+        <div class="chips">
+          <span class="chip sev sev-${esc(s.severity)}">${esc(s.severity)}</span>
+          <span class="chip">${esc(s.category)}</span>
+          ${s.line ? `<button class="chip line" onclick="jumpToLine(${+s.line})">L${esc(s.line)}</button>` : ""}
+          ${s.recurring ? `<span class="chip rec">${ICON.repeat} recurring for ${esc(author)}</span>` : ""}
+        </div>
+        <h3>${esc(s.title)}</h3>
+        <p>${esc(s.explanation)}</p>
+        ${s.memory_basis ? `<div class="cite">${ICON.brain}<div><b>From team memory</b>${esc(String(s.memory_basis).replace(/^\s*\[[^\]]*\]\s*/, ""))}</div></div>` : ""}
+        ${s.suggested_fix ? `<details class="fix"><summary>Suggested fix</summary><pre>${esc(s.suggested_fix)}</pre></details>` : ""}
       </div>
-      <div>${esc(s.explanation)}</div>
-      ${s.memory_basis ? `<div class="membasis">${esc(s.memory_basis)}</div>` : ""}
-      ${s.suggested_fix ? `<pre class="fix">${esc(s.suggested_fix)}</pre>` : ""}
-      <div class="actions">
-        <button class="good" onclick="decide('${s.id}', true)">Accept</button>
-        <button class="bad" onclick="decide('${s.id}', false)">Reject</button>
-        <input id="reason-${s.id}" placeholder="reason (optional, but it teaches the agent)" />
-        <span class="verdict" id="v-${s.id}"></span>
+      <div class="decide">
+        <input id="reason-${s.id}" placeholder="Why? (optional, teaches CodeMind)" />
+        <button class="vbtn acc" onclick="decide('${s.id}', true)">${ICON.check} Accept</button>
+        <button class="vbtn rej" onclick="decide('${s.id}', false)">${ICON.x} Reject</button>
+        <span class="stamp"></span>
       </div>
-    </div>`).join("");
-  const skipped = (r.skipped_due_to_memory || []).length
-    ? `<div class="skipped">🧠 Skipped because your team rejected it before:<ul>${r.skipped_due_to_memory.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : "";
-  $("results").innerHTML = `<div class="summary">${esc(r.summary)} ${r.used_memory ? "" : "<b>(memory OFF)</b>"}</div>${cards || '<div class="empty">No issues found.</div>'}${skipped}`;
-  const rc = $("recalled");
-  rc.className = "memlist" + (r.memories_used.length ? "" : " empty");
-  rc.innerHTML = r.memories_used.length
-    ? r.memories_used.map(m => `<div><b>${esc(tagLabel(m))}</b> — ${esc(m.text)}</div>`).join("")
-    : (r.used_memory ? "No relevant memories yet — this team is new." : "Memory disabled for this review.");
+    </article>`).join("");
+
+  const skipped = r.skipped_due_to_memory || [];
+  $("#p-review").innerHTML = `
+    ${r.used_memory ? "" : `<div class="banner">${ICON.off}<div><b>Memory is off.</b> This is what a generic reviewer says, with no idea what your team decided before.</div></div>`}
+    <div class="summary">
+      <p>${esc(r.summary)}</p>
+      <div class="stats">
+        <div class="stat"><b>${r.suggestions.length}</b><span>Suggestions</span></div>
+        <div class="stat memstat"><b>${fromMem}</b><span>From memory</span></div>
+        <div class="stat memstat"><b>${skipped.length}</b><span>Skipped</span></div>
+        <div class="stat memstat"><b>${r.memories_used.length}</b><span>Recalled</span></div>
+      </div>
+    </div>
+    ${cards || `<div class="empty"><div class="ico" style="color:var(--good)">${ICON.check}</div><h3>Looks good</h3><p>No issues found.</p></div>`}
+    ${skipped.length ? `<div class="section-h">Skipped because your team rejected it before</div>
+      <div class="skipped">${skipped.map(x => `<div>${ICON.skip}<s>${esc(x)}</s></div>`).join("")}</div>` : ""}
+    ${r.used_memory ? `<div class="section-h">Memories recalled for this review · ${r.memories_used.length}</div>
+      ${r.memories_used.length ? r.memories_used.map(memRow).join("") : `<p style="color:var(--muted);font-size:13px">Nothing yet. This team's memory is empty, so accept or reject a few suggestions to teach it.</p>`}` : ""}
+  `;
 }
 
+window.jumpToLine = jumpToLine;
 window.decide = async (sid, accepted) => {
-  const reason = $("reason-" + sid).value;
-  const v = $("v-" + sid); v.className = "verdict"; v.textContent = "saving to memory…";
+  const card = $("#s-" + sid), stamp = $(".stamp", card);
+  $$(".vbtn", card).forEach(b => b.disabled = true);
+  flow({submit: "done", recall: currentReview.used_memory ? "done" : undefined, review: "done", decide: "done", retain: "active"});
   try {
-    const r = await api("/api/verdict", {review_id: currentReview.review_id, suggestion_id: sid,
-                                         accepted, reason, reviewer: "lead"});
-    v.className = "verdict " + (accepted ? "accepted" : "rejected");
-    v.textContent = (accepted ? "✓ accepted" : "✗ rejected") + " · retained in " + r.saved_to_bank;
-    $("s-" + sid).querySelectorAll("button").forEach(b => b.disabled = true);
+    const r = await api("/api/verdict", {review_id: currentReview.review_id, suggestion_id: sid, accepted,
+                                         reason: $("#reason-" + sid).value, reviewer: "lead"});
+    card.classList.add("decided", accepted ? "accepted" : "rejected");
+    stamp.innerHTML = `${accepted ? ICON.check + " Accepted" : ICON.x + " Rejected"} <small>→ ${esc(r.saved_to_bank)}</small>`;
+    flow({submit: "done", recall: currentReview.used_memory ? "done" : undefined, review: "done", decide: "done", retain: "done"});
+    toast(`${accepted ? "Accepted" : "Rejected"} and retained in Hindsight`, "mem");
     loadBank();
-  } catch (e) { v.className = "verdict err"; v.textContent = e.message; }
+  } catch (e) {
+    $$(".vbtn", card).forEach(b => b.disabled = false);
+    flow({submit: "done", review: "done", decide: "active"}); toast(e.message, "err");
+  }
 };
 
-$("ruleBtn").onclick = async () => {
-  const rule = $("rule").value.trim(); if (!rule) return;
-  $("ruleStatus").textContent = "saving…";
-  try {
-    await api("/api/rules", {team: $("team").value, rule, author: $("author").value, kind: $("ruleKind").value});
-    $("ruleStatus").textContent = "✓ remembered: " + rule; $("rule").value = ""; loadBank();
-  } catch (e) { $("ruleStatus").textContent = e.message; }
-};
-
-$("insightBtn").onclick = async () => {
-  const el = $("insights"); el.className = ""; el.textContent = "Reflecting over team memory…";
-  try { el.textContent = (await api("/api/insights", {team: $("team").value})).insights; }
-  catch (e) { el.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
-};
-
-async function loadBank() {
-  const el = $("bankMem");
-  try {
-    const r = await api("/api/memories?team=" + encodeURIComponent($("team").value));
-    $("bank").textContent = "hindsight bank: " + r.bank_id;
-    el.className = "memlist" + (r.memories.length ? "" : " empty");
-    el.innerHTML = r.memories.length
-      ? r.memories.map(m => `<div><b>${esc(tagLabel(m))}</b> — ${esc(m.text)}</div>`).join("")
-      : "Empty — review some code and accept/reject suggestions.";
-  } catch (e) { el.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+/* ---------------- memory tab ---------------- */
+let bank = [], filter = "all", query = "", ruleKind = "rule";
+const FILTERS = ["all", "rule", "decision", "accepted", "rejected", "mistake", "learned"];
+function renderFilters() {
+  const counts = bank.reduce((a, m) => (a[kindOf(m)] = (a[kindOf(m)] || 0) + 1, a), {});
+  $("#filters").innerHTML = FILTERS.filter(f => f === "all" || counts[f]).map(f =>
+    `<button class="fchip ${filter === f ? "on" : ""}" data-f="${f}">${f}${f === "all" ? "" : " · " + counts[f]}</button>`).join("") +
+    `<input class="search" id="memSearch" placeholder="Search memory…" value="${esc(query)}" />`;
+  $$(".fchip").forEach(b => b.onclick = () => { filter = b.dataset.f; renderFilters(); renderMemList(); });
+  $("#memSearch").oninput = (e) => { query = e.target.value; renderMemList(); };
 }
-$("refreshMem").onclick = loadBank;
-$("team").onchange = loadBank;
-$("sample").value = Object.keys(SAMPLES)[0]; $("sample").onchange({target: $("sample")});
-loadBank();
+function renderMemList() {
+  const q = query.toLowerCase();
+  const items = bank.filter(m => (filter === "all" || kindOf(m) === filter) && (!q || (m.text || "").toLowerCase().includes(q)));
+  $("#memList").innerHTML = items.length ? items.map(memRow).join("") :
+    `<div class="empty"><div class="ico">${ICON.brain}</div><h3>${bank.length ? "No matches" : "Memory is empty"}</h3><p>${bank.length ? "Try another filter." : "Teach a rule above, or accept/reject suggestions in a review."}</p></div>`;
+}
+async function loadBank() {
+  try {
+    const r = await api("/api/memories?limit=200&team=" + encodeURIComponent($("#team").value));
+    bank = r.memories; $("#bankid").textContent = r.bank_id;
+    $("#bankcount").textContent = `· ${bank.length} memories`; $("#cMemory").textContent = bank.length;
+    $("#bankdot").className = "dot ok";
+  } catch (e) {
+    bank = []; $("#bankdot").className = "dot err"; $("#bankcount").textContent = "· offline";
+    $("#bankpill").title = e.message;
+  }
+  renderFilters(); renderMemList();
+}
+$$("#kindSeg button").forEach(b => b.onclick = () => {
+  ruleKind = b.dataset.kind; $$("#kindSeg button").forEach(x => x.classList.toggle("on", x === b));
+  $("#rule").placeholder = ruleKind === "rule" ? "e.g. Money is always integer paise, never floats" : "e.g. All payment calls go through PaymentClient";
+});
+async function teach() {
+  const rule = $("#rule").value.trim(); if (!rule) return;
+  const btn = $("#ruleBtn"); btn.disabled = true; btn.textContent = "Saving…";
+  try {
+    await api("/api/rules", {team: $("#team").value, rule, author: $("#author").value, kind: ruleKind});
+    $("#rule").value = ""; toast("Remembered: " + rule, "mem"); loadBank();
+  } catch (e) { toast(e.message, "err"); }
+  btn.disabled = false; btn.textContent = "Remember";
+}
+$("#ruleBtn").onclick = teach;
+$("#rule").onkeydown = (e) => { if (e.key === "Enter") teach(); };
+
+/* ---------------- insights ---------------- */
+function md(text) {
+  const lines = esc(text).split("\n"); let html = "", inList = false;
+  for (let l of lines) {
+    l = l.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/`(.+?)`/g, "<code>$1</code>");
+    const li = l.match(/^\s*[-*•]\s+(.*)/), h = l.match(/^#{1,3}\s+(.*)/);
+    if (li) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${li[1]}</li>`; continue; }
+    if (inList) { html += "</ul>"; inList = false; }
+    if (h) html += `<h3>${h[1]}</h3>`; else if (l.trim()) html += `<p>${l}</p>`;
+  }
+  return html + (inList ? "</ul>" : "");
+}
+$("#insightBtn").onclick = async () => {
+  const btn = $("#insightBtn"); btn.disabled = true;
+  $("#insights").innerHTML = [80, 60, 90, 50, 70].map(w => `<div class="skel" style="width:${w}%"></div>`).join("");
+  try { $("#insights").innerHTML = md((await api("/api/insights", {team: $("#team").value})).insights); }
+  catch (e) { $("#insights").innerHTML = ""; toast(e.message, "err"); }
+  btn.disabled = false;
+};
+
+/* ---------------- misc ---------------- */
+$("#useMemory").onchange = (e) => $("#memHint").textContent = e.target.checked
+  ? "Recall rules & past verdicts from Hindsight" : "Off: generic review, no team context";
+$("#team").onchange = () => { $("#bankid").textContent = "codemind-" + $("#team").value.toLowerCase().replace(/[^a-z0-9]+/g, "-"); loadBank(); };
+function setTheme(t) { document.documentElement.dataset.theme = t; try { localStorage.setItem("cm-theme", t); } catch {} }
+$("#themeBtn").onclick = () => setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+try { const t = localStorage.getItem("cm-theme"); if (t) setTheme(t); } catch {}
+
+loadSample(0, false); loadBank();
 </script>
 </body>
 </html>
